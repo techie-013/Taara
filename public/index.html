@@ -1,0 +1,389 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taara AI Agent - Vercel Deployment</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .command-section {
+            margin-bottom: 30px;
+        }
+        
+        .command-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .examples {
+            background: #f7f7f7;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .examples h3 {
+            color: #555;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .examples ul {
+            list-style: none;
+        }
+        
+        .examples li {
+            padding: 8px 0;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .example-badge {
+            background: #667eea;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+        }
+        
+        .example-badge.blocked {
+            background: #dc3545;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #764ba2;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            background: #f7f7f7;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .result.allowed {
+            border-left: 5px solid #28a745;
+        }
+        
+        .result.blocked {
+            border-left: 5px solid #dc3545;
+        }
+        
+        .result h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .result p {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .status-badge.allowed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.blocked {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .calendar-section {
+            background: #f7f7f7;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .calendar-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .event {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .event-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .event-details {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌟 Taara AI Agent</h1>
+            <p>Your intelligent personal scheduler with policy enforcement</p>
+        </div>
+        
+        <div class="content">
+            <div class="command-section">
+                <h2>Try These Commands</h2>
+                <div class="examples">
+                    <h3>✅ Allowed Actions</h3>
+                    <ul>
+                        <li>
+                            <span class="example-badge">Try</span>
+                            "Schedule a meeting tomorrow at 2pm"
+                        </li>
+                        <li>
+                            <span class="example-badge">Try</span>
+                            "Remind me to call John"
+                        </li>
+                        <li>
+                            <span class="example-badge">Try</span>
+                            "Add task: Buy groceries"
+                        </li>
+                    </ul>
+                    
+                    <h3 style="margin-top: 15px;">❌ Blocked Actions</h3>
+                    <ul>
+                        <li>
+                            <span class="example-badge blocked">Try</span>
+                            "Delete everything from my calendar"
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" id="command" placeholder="Enter your command..." 
+                           value="Schedule a meeting tomorrow at 2pm">
+                    <button onclick="sendCommand()" id="sendBtn">Send</button>
+                </div>
+                
+                <div id="result" class="result" style="display: none;"></div>
+            </div>
+            
+            <div class="calendar-section">
+                <h2>📅 Your Calendar</h2>
+                <div id="calendar">
+                    <div style="text-align: center; color: #999;">Loading calendar...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>ARMORIQ x OPENCLAW HACKATHON 2026</p>
+        </div>
+    </div>
+
+    <script>
+        async function sendCommand() {
+            const command = document.getElementById('command').value;
+            const resultDiv = document.getElementById('result');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            if (!command) return;
+            
+            // Show loading
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div style="text-align: center;"><div class="loader"></div> Processing...</div>';
+            sendBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({text: command})
+                });
+                
+                const data = await response.json();
+                
+                if (data.allowed) {
+                    resultDiv.className = 'result allowed';
+                    resultDiv.innerHTML = 
+                        <div class="status-badge allowed">✅ ALLOWED</div>
+                        <h3>Success!</h3>
+                        <p></p>
+                    ;
+                } else {
+                    resultDiv.className = 'result blocked';
+                    resultDiv.innerHTML = 
+                        <div class="status-badge blocked">❌ BLOCKED</div>
+                        <h3>Action Blocked</h3>
+                        <p></p>
+                    ;
+                }
+                
+                // Refresh calendar
+                loadCalendar();
+                
+            } catch (error) {
+                resultDiv.className = 'result blocked';
+                resultDiv.innerHTML = 
+                    <div class="status-badge blocked">❌ ERROR</div>
+                    <h3>Error</h3>
+                    <p></p>
+                ;
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+        
+        async function loadCalendar() {
+            try {
+                const response = await fetch('/api/calendar');
+                const data = await response.json();
+                
+                const calendarDiv = document.getElementById('calendar');
+                
+                if (data.events && data.events.length > 0) {
+                    let html = '';
+                    data.events.forEach(event => {
+                        html += 
+                            <div class="event">
+                                <div class="event-title"></div>
+                                <div class="event-details">📅  at ⏰ </div>
+                            </div>
+                        ;
+                    });
+                    calendarDiv.innerHTML = html;
+                } else {
+                    calendarDiv.innerHTML = '<div style="text-align: center; color: #999;">No events scheduled</div>';
+                }
+            } catch (error) {
+                document.getElementById('calendar').innerHTML = 
+                    '<div style="text-align: center; color: #999;">Error loading calendar</div>';
+            }
+        }
+        
+        // Load calendar on page load
+        loadCalendar();
+        
+        // Allow Enter key to send
+        document.getElementById('command').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendCommand();
+            }
+        });
+    </script>
+</body>
+</html>
