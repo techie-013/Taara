@@ -1,0 +1,3 @@
+﻿openclaw>=0.1.0
+pyyaml>=5.4.1
+colorama>=0.4.4

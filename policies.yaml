@@ -1,0 +1,9 @@
+﻿# Simple policies
+- name: "no_dangerous_ops"
+  type: "operation_restriction"
+  allowed_ops: ["schedule", "remind", "task"]
+  blocked_ops: ["delete_all", "clear"]
+
+- name: "work_hours"
+  type: "time_restriction"
+  allowed_hours: [9,10,11,12,13,14,15,16,17]
