@@ -3,89 +3,340 @@
 <head>
     <title>Taara AI Agent</title>
     <style>
-        body { font-family: Arial; max-width: 800px; margin: 50px auto; padding: 20px; }
-        .container { border: 2px solid #333; padding: 20px; border-radius: 10px; }
-        .allowed { color: green; }
-        .blocked { color: red; }
-        input, button { padding: 10px; margin: 10px 0; width: 100%; }
-        #result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .example-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .example-btn.allowed {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+        
+        .example-btn.blocked {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+        
+        .example-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        #command {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        
+        #command:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        #sendBtn {
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        #sendBtn:hover {
+            background: #764ba2;
+        }
+        
+        #sendBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        #result.allowed {
+            display: block;
+            background: #e8f5e9;
+            border-left: 5px solid #2e7d32;
+            color: #2e7d32;
+        }
+        
+        #result.blocked {
+            display: block;
+            background: #ffebee;
+            border-left: 5px solid #c62828;
+            color: #c62828;
+        }
+        
+        #result.error {
+            display: block;
+            background: #fff3e0;
+            border-left: 5px solid #ef6c00;
+            color: #ef6c00;
+        }
+        
+        .calendar {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .calendar h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .event {
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .event-time {
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .debug {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🌟 Taara AI Agent</h1>
-        <p>⚡ ARMORIQ x OPENCLAW HACKATHON 2026</p>
+        <div class="subtitle">⚡ ARMORIQ x OPENCLAW HACKATHON 2026</div>
         
-        <div>
-            <button onclick="fillCommand('Schedule a meeting tomorrow at 2pm')">✅ Schedule meeting @ 2pm</button>
-            <button onclick="fillCommand('Remind me to call John at 5pm')">✅ Remind: Call John</button>
-            <button onclick="fillCommand('Add task: Buy groceries')">✅ Task: Buy groceries</button>
-            <button onclick="fillCommand('Delete everything from my calendar')">❌ Delete everything</button>
-            <button onclick="fillCommand('What meetings do I have tomorrow?')">📅 Check schedule</button>
+        <div class="button-grid">
+            <button class="example-btn allowed" onclick="setCommand('Schedule a meeting tomorrow at 2pm')">
+                ✅ Schedule @ 2pm
+            </button>
+            <button class="example-btn allowed" onclick="setCommand('Remind me to call John at 5pm')">
+                ✅ Remind: Call John
+            </button>
+            <button class="example-btn allowed" onclick="setCommand('Add task: Buy groceries')">
+                ✅ Task: Buy groceries
+            </button>
+            <button class="example-btn blocked" onclick="setCommand('Delete everything from my calendar')">
+                ❌ Delete everything
+            </button>
+            <button class="example-btn allowed" onclick="setCommand('What meetings do I have tomorrow?')">
+                📅 Check schedule
+            </button>
         </div>
         
-        <input type="text" id="command" placeholder="Enter command..." value="Schedule a meeting tomorrow at 2pm">
-        <button onclick="sendCommand()">Send Command</button>
+        <div class="input-group">
+            <input type="text" id="command" placeholder="Type your command here..." value="Schedule a meeting tomorrow at 2pm">
+            <button id="sendBtn" onclick="sendCommand()">Send</button>
+        </div>
         
         <div id="result"></div>
-        <div id="calendar"></div>
+        
+        <div class="calendar">
+            <h3>📅 Today's Schedule</h3>
+            <div id="events">
+                <div class="event">
+                    <span class="event-time">2:00 PM</span> - Team Meeting
+                </div>
+                <div class="event">
+                    <span class="event-time">5:00 PM</span> - Call John
+                </div>
+            </div>
+        </div>
+        
+        <div id="debug" class="debug"></div>
     </div>
 
     <script>
-    async function sendCommand() {
-        const command = document.getElementById('command').value;
-        const resultDiv = document.getElementById('result');
+        // Simple function to set command from buttons
+        function setCommand(text) {
+            document.getElementById('command').value = text;
+            sendCommand();
+        }
         
-        resultDiv.innerHTML = 'Processing...';
-        
-        try {
-            // Try both possible endpoints
-            let response = await fetch('/api/process', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({text: command})
-            });
+        // Main function to send commands
+        async function sendCommand() {
+            const command = document.getElementById('command').value;
+            const resultDiv = document.getElementById('result');
+            const sendBtn = document.getElementById('sendBtn');
+            const debugDiv = document.getElementById('debug');
             
-            // If that fails, try the other endpoint
-            if (!response.ok) {
-                response = await fetch('/api/process.py', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({text: command})
+            if (!command.trim()) {
+                alert('Please enter a command');
+                return;
+            }
+            
+            // Show loading
+            resultDiv.className = '';
+            resultDiv.innerHTML = 'Sending...';
+            sendBtn.disabled = true;
+            
+            try {
+                // Try multiple API endpoints
+                const endpoints = [
+                    '/api/process',
+                    '/api/process.py',
+                    window.location.origin + '/api/process'
+                ];
+                
+                let response = null;
+                let lastError = null;
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        console.log('Trying endpoint:', endpoint);
+                        
+                        response = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                text: command
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            console.log('Success with endpoint:', endpoint);
+                            break;
+                        }
+                    } catch (e) {
+                        lastError = e;
+                        console.log('Failed endpoint:', endpoint, e.message);
+                    }
+                }
+                
+                if (!response || !response.ok) {
+                    throw new Error('Could not connect to API. Please check if the server is running.');
+                }
+                
+                // Try to parse response as JSON
+                let data;
+                const responseText = await response.text();
+                
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    // Show the actual response for debugging
+                    debugDiv.style.display = 'block';
+                    debugDiv.innerHTML = 'Raw Response:\n' + responseText;
+                    throw new Error('Server returned invalid JSON');
+                }
+                
+                // Show debug info
+                debugDiv.style.display = 'block';
+                debugDiv.innerHTML = 'API Response:\n' + JSON.stringify(data, null, 2);
+                
+                // Display result
+                if (data.allowed) {
+                    resultDiv.className = 'allowed';
+                    resultDiv.innerHTML = '✅ ' + (data.message || 'Command executed successfully');
+                } else {
+                    resultDiv.className = 'blocked';
+                    resultDiv.innerHTML = '❌ ' + (data.message || data.reason || 'Action blocked');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = '❌ Error: ' + error.message;
+                
+                debugDiv.style.display = 'block';
+                debugDiv.innerHTML = 'Error Details:\n' + error.stack;
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+        
+        // Test API on load
+        window.addEventListener('load', function() {
+            console.log('Page loaded, testing API...');
+            
+            fetch('/api/process')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('API test successful:', data);
+                })
+                .catch(error => {
+                    console.log('API test failed:', error.message);
                 });
-            }
-            
-            const data = await response.json();
-            
-            if (data.allowed) {
-                resultDiv.innerHTML = '<div class="allowed">✅ ' + (data.message || 'Success') + '</div>';
-            } else {
-                resultDiv.innerHTML = '<div class="blocked">❌ ' + (data.message || data.reason || 'Blocked') + '</div>';
-            }
-            
-            // Load calendar
-            loadCalendar();
-            
-        } catch (error) {
-            resultDiv.innerHTML = '<div class="blocked">❌ Error: ' + error + '</div>';
-        }
-    }
-    
-    function fillCommand(text) {
-        document.getElementById('command').value = text;
-        sendCommand();
-    }
-    
-    async function loadCalendar() {
-        try {
-            const response = await fetch('/api/calendar');
-            if (!response.ok) return;
-            const data = await response.json();
-            // Handle calendar data
-        } catch (e) {
-            // Ignore calendar errors for now
-        }
-    }
+        });
     </script>
 </body>
 </html>
