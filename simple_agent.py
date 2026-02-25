@@ -1,6 +1,6 @@
 ﻿#!/usr/bin/env python3
 """
-Taara - Simple OpenClaw Agent
+Taara - AI Agent with ARMORIQ Security Integration
 """
 
 import os
@@ -10,7 +10,14 @@ from datetime import datetime, timedelta
 import re
 from colorama import init, Fore, Style
 
-# Initialize colorama
+# Import ARMORIQ client
+try:
+    from armoriq_integration.armoriq_client import ArmoriqClient
+    armoriq_available = True
+except ImportError:
+    armoriq_available = False
+    print(f"{Fore.YELLOW}⚠ ARMORIQ integration not available{Style.RESET_ALL}")
+
 init()
 
 class SimpleTaara:
@@ -19,6 +26,15 @@ class SimpleTaara:
         self.load_policies()
         self.calendar_file = os.path.join(os.path.expanduser("~"), "taara_calendar.json")
         
+        # Initialize ARMORIQ if available
+        self.armoriq = None
+        if armoriq_available:
+            try:
+                self.armoriq = ArmoriqClient()
+                print(f"{Fore.GREEN}✓ ARMORIQ security initialized{Style.RESET_ALL}")
+            except Exception as e:
+                print(f"{Fore.YELLOW}⚠ ARMORIQ init failed: {e}{Style.RESET_ALL}")
+    
     def load_policies(self):
         """Load simple policies"""
         try:
@@ -45,15 +61,27 @@ class SimpleTaara:
         return True, "Allowed"
     
     def execute_action(self, action, params):
-        """Execute the action"""
+        """Execute the action with ARMORIQ audit"""
+        result = None
+        
         if action == "schedule":
-            return self.schedule_meeting(params)
+            result = self.schedule_meeting(params)
         elif action == "remind":
-            return self.set_reminder(params)
+            result = self.set_reminder(params)
         elif action == "task":
-            return self.create_task(params)
+            result = self.create_task(params)
         else:
-            return {"status": "error", "message": f"Unknown action: {action}"}
+            result = {"status": "error", "message": f"Unknown action: {action}"}
+        
+        # Log to ARMORIQ if available
+        if self.armoriq and result.get('status') == 'success':
+            self.armoriq.create_audit_log(
+                action=action,
+                result=result,
+                user=params.get('user_id', 'anonymous')
+            )
+        
+        return result
     
     def schedule_meeting(self, params):
         """Simple meeting scheduling"""
@@ -68,10 +96,12 @@ class SimpleTaara:
         
         # Add new event
         event = {
+            "id": len(calendar["events"]) + 1,
             "title": params.get('title', 'Meeting'),
             "time": params.get('time', '12:00'),
             "date": params.get('date', datetime.now().strftime('%Y-%m-%d')),
-            "created": datetime.now().isoformat()
+            "created": datetime.now().isoformat(),
+            "verified": params.get('verified', False)
         }
         calendar["events"].append(event)
         
@@ -81,7 +111,8 @@ class SimpleTaara:
         
         return {
             "status": "success",
-            "message": f"Scheduled: {event['title']} at {event['time']} on {event['date']}"
+            "message": f"Scheduled: {event['title']} at {event['time']} on {event['date']}",
+            "event": event
         }
     
     def set_reminder(self, params):
@@ -98,13 +129,30 @@ class SimpleTaara:
             "message": f"Task created: {params.get('text', '')}"
         }
     
-    def parse_input(self, text):
-        """Simple parsing"""
+    def parse_input(self, text, verify_with_armoriq=True):
+        """Parse input with optional ARMORIQ verification"""
         text = text.lower().strip()
         
-        # Check for dangerous commands
+        # Create intent data for ARMORIQ
+        intent_data = {
+            'raw_input': text,
+            'type': self._classify_intent(text),
+            'parameters': {},
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # Check for dangerous commands first
         if "delete everything" in text or "clear all" in text:
-            return "delete_all", {}
+            intent_data['type'] = 'dangerous'
+            action = "delete_all"
+            params = {"scope": "all"}
+            
+            # Verify with ARMORIQ
+            if self.armoriq and verify_with_armoriq:
+                verification = self.armoriq.verify_intent(intent_data)
+                if verification.get('risk_score', 0) > 0.7:
+                    return action, params, verification
+            return action, params, None
         
         # Schedule meeting
         if "schedule" in text or "meeting" in text:
@@ -128,31 +176,74 @@ class SimpleTaara:
                     
                 params['time'] = f"{hour}:{minute}"
             
-            return "schedule", params
+            intent_data['type'] = 'schedule'
+            intent_data['parameters'] = params
+            
+            action = "schedule"
         
         # Reminder
         elif "remind" in text:
             msg = text.replace("remind", "").replace("me", "").replace("to", "").strip()
-            return "remind", {"text": msg}
+            params = {"text": msg}
+            intent_data['type'] = 'remind'
+            intent_data['parameters'] = params
+            action = "remind"
         
         # Task
         elif "task" in text or "todo" in text:
             task = text.replace("task", "").replace("todo", "").replace("add", "").strip()
-            return "task", {"text": task}
+            params = {"text": task}
+            intent_data['type'] = 'task'
+            intent_data['parameters'] = params
+            action = "task"
         
-        return "unknown", {}
+        else:
+            intent_data['type'] = 'unknown'
+            action = "unknown"
+            params = {}
+        
+        # Verify with ARMORIQ
+        verification = None
+        if self.armoriq and verify_with_armoriq and action != "unknown":
+            verification = self.armoriq.verify_intent(intent_data)
+            if verification and verification.get('verified'):
+                params['verified'] = True
+                params['verification_id'] = verification.get('verification_id')
+        
+        return action, params, verification
+    
+    def _classify_intent(self, text):
+        """Classify intent type"""
+        if any(word in text for word in ['schedule', 'meeting', 'appointment']):
+            return 'schedule'
+        elif 'remind' in text:
+            return 'remind'
+        elif any(word in text for word in ['task', 'todo']):
+            return 'task'
+        elif any(word in text for word in ['delete', 'remove', 'clear']):
+            return 'dangerous'
+        else:
+            return 'query'
     
     def run(self):
-        """Main loop"""
-        print(f"\n{Fore.CYAN}{'='*50}{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}🌟 Taara - Simple Agent{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}{'='*50}{Style.RESET_ALL}")
-        print("\nCommands:")
-        print("  • Schedule a meeting tomorrow at 2pm")
-        print("  • Remind me to call John")
-        print("  • Add task: Buy groceries")
-        print("  • Delete everything (will be blocked)")
-        print("  • quit\n")
+        """Main loop with ARMORIQ integration"""
+        print(f"\n{Fore.CYAN}{'='*60}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}🌟 Taara AI Agent with ARMORIQ Security{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}⚡ ARMORIQ x OPENCLAW HACKATHON 2026{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}{'='*60}{Style.RESET_ALL}")
+        
+        if self.armoriq:
+            print(f"{Fore.GREEN}✓ ARMORIQ Security: ENABLED{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.YELLOW}⚠ ARMORIQ Security: DISABLED (using local fallback){Style.RESET_ALL}")
+        
+        print("\n📋 Try these commands:")
+        print("  ✅ Schedule a meeting tomorrow at 2pm")
+        print("  ✅ Remind me to call John at 5pm")
+        print("  ✅ Add task: Buy groceries")
+        print("  ❌ Delete everything from my calendar")
+        print("  📅 What meetings do I have tomorrow?")
+        print("\n  Type 'quit' to exit\n")
         
         while True:
             try:
@@ -165,25 +256,47 @@ class SimpleTaara:
                 if not user_input:
                     continue
                 
-                print(f"{Fore.BLUE}📝 Parsing...{Style.RESET_ALL}")
-                action, params = self.parse_input(user_input)
+                # Parse with ARMORIQ verification
+                print(f"{Fore.BLUE}📝 Parsing with ARMORIQ...{Style.RESET_ALL}")
+                action, params, verification = self.parse_input(user_input)
+                
+                # Show ARMORIQ verification result
+                if verification:
+                    print(f"   ARMORIQ Risk Score: {verification.get('risk_score', 0):.2f}")
+                    if verification.get('mode') == 'fallback':
+                        print(f"   Mode: Local Fallback")
+                
                 print(f"   Action: {action}")
                 
+                # Check policies
                 print(f"{Fore.BLUE}🔒 Checking policies...{Style.RESET_ALL}")
                 allowed, reason = self.check_policies(action, params)
                 
                 if not allowed:
                     print(f"{Fore.RED}❌ BLOCKED: {reason}{Style.RESET_ALL}")
                     print(f"{Fore.RED}⛔ No changes made{Style.RESET_ALL}")
+                    
+                    # Log blocked action
+                    if self.armoriq:
+                        self.armoriq.create_audit_log(
+                            action=action,
+                            result={'reason': reason, 'blocked': True},
+                            user='anonymous'
+                        )
                     continue
                 
                 print(f"{Fore.GREEN}✓ Policy check passed{Style.RESET_ALL}")
                 
+                # Execute
                 print(f"{Fore.BLUE}⚡ Executing...{Style.RESET_ALL}")
                 result = self.execute_action(action, params)
                 
                 if result['status'] == 'success':
                     print(f"{Fore.GREEN}✅ {result['message']}{Style.RESET_ALL}")
+                    
+                    # Show verification badge if available
+                    if params.get('verified'):
+                        print(f"   🔐 ARMORIQ Verified: {params.get('verification_id', '')[:8]}...")
                 else:
                     print(f"{Fore.RED}❌ {result['message']}{Style.RESET_ALL}")
                 

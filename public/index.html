@@ -1,691 +1,91 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taara - Intelligent Scheduler</title>
+    <title>Taara AI Agent</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        /* Dashboard Container */
-        .dashboard {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 25px;
-        }
-
-        /* Main Card Style */
-        .card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 24px;
-            padding: 30px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        /* Header */
-        .header {
-            grid-column: 1 / -1;
-            background: rgba(255, 255, 255, 0.98);
-            border-radius: 24px;
-            padding: 25px 35px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .logo-icon {
-            font-size: 2.5em;
-            filter: drop-shadow(0 4px 6px rgba(102, 126, 234, 0.4));
-        }
-
-        .logo h1 {
-            font-size: 2em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 700;
-        }
-
-        .badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 50px;
-            font-size: 0.9em;
-            font-weight: 500;
-        }
-
-        /* Command Input Section */
-        .command-section {
-            background: white;
-            border-radius: 20px;
-            padding: 25px;
-            margin-bottom: 25px;
-        }
-
-        .command-section h2 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 1.4em;
-        }
-
-        .input-wrapper {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        #command {
-            flex: 1;
-            padding: 18px 25px;
-            border: 2px solid #e0e0e0;
-            border-radius: 50px;
-            font-size: 1.1em;
-            transition: all 0.3s;
-            background: #f8f9fa;
-        }
-
-        #command:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-            background: white;
-        }
-
-        #sendBtn {
-            padding: 0 35px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        #sendBtn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
-        }
-
-        #sendBtn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Example Chips */
-        .examples {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .example-chip {
-            background: #f0f2f5;
-            padding: 10px 20px;
-            border-radius: 50px;
-            font-size: 0.95em;
-            color: #555;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-        }
-
-        .example-chip.allowed {
-            border-left: 4px solid #28a745;
-        }
-
-        .example-chip.blocked {
-            border-left: 4px solid #dc3545;
-        }
-
-        .example-chip:hover {
-            background: #e8eaf0;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        /* Result Card */
-        .result-card {
-            background: white;
-            border-radius: 20px;
-            padding: 25px;
-            margin-top: 25px;
-            transition: all 0.3s;
-        }
-
-        .result-card.allowed {
-            border-left: 8px solid #28a745;
-            background: linear-gradient(to right, #f8fff9, white);
-        }
-
-        .result-card.blocked {
-            border-left: 8px solid #dc3545;
-            background: linear-gradient(to right, #fff8f8, white);
-        }
-
-        .result-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .status-badge {
-            padding: 8px 16px;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.9em;
-        }
-
-        .status-badge.allowed {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-badge.blocked {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .result-message {
-            color: #444;
-            line-height: 1.6;
-            font-size: 1.1em;
-        }
-
-        /* Calendar Section */
-        .calendar-card {
-            background: white;
-            border-radius: 24px;
-            padding: 30px;
-            height: fit-content;
-        }
-
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-
-        .calendar-header h2 {
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .weekday {
-            text-align: center;
-            font-weight: 600;
-            color: #666;
-            font-size: 0.9em;
-            padding: 8px;
-        }
-
-        .calendar-day {
-            aspect-ratio: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: #f8f9fa;
-            border-radius: 12px;
-            font-size: 0.9em;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-        }
-
-        .calendar-day.has-event {
-            background: linear-gradient(135deg, #667eea20, #764ba220);
-            border: 2px solid #667eea;
-            font-weight: 600;
-        }
-
-        .calendar-day.today {
-            background: #667eea;
-            color: white;
-        }
-
-        .calendar-day:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .event-dot {
-            width: 6px;
-            height: 6px;
-            background: #667eea;
-            border-radius: 50%;
-            margin-top: 2px;
-        }
-
-        /* Events List */
-        .events-list {
-            margin-top: 25px;
-            border-top: 2px solid #f0f0f0;
-            padding-top: 20px;
-        }
-
-        .event-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            transition: transform 0.2s;
-        }
-
-        .event-item:hover {
-            transform: translateX(5px);
-            background: #f0f2f5;
-        }
-
-        .event-time {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 30px;
-            font-size: 0.9em;
-            font-weight: 600;
-            min-width: 70px;
-            text-align: center;
-        }
-
-        .event-details {
-            flex: 1;
-        }
-
-        .event-title {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 4px;
-        }
-
-        .event-date {
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .empty-state {
-            text-align: center;
-            color: #999;
-            padding: 40px 20px;
-        }
-
-        /* Loading Spinner */
-        .loader {
-            display: inline-block;
-            width: 24px;
-            height: 24px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                text-align: center;
-                gap: 15px;
-            }
-            
-            .input-wrapper {
-                flex-direction: column;
-            }
-            
-            #sendBtn {
-                padding: 15px;
-            }
-        }
-
-        /* Animations */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .animate-in {
-            animation: slideIn 0.3s ease-out;
-        }
+        body { font-family: Arial; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .container { border: 2px solid #333; padding: 20px; border-radius: 10px; }
+        .allowed { color: green; }
+        .blocked { color: red; }
+        input, button { padding: 10px; margin: 10px 0; width: 100%; }
+        #result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
-    <div class="dashboard">
-        <!-- Header -->
-        <div class="header animate-in">
-            <div class="logo">
-                <span class="logo-icon">🌟</span>
-                <h1>Taara AI Agent</h1>
-            </div>
-            <div class="badge">
-                ⚡ ARMORIQ x OPENCLAW HACKATHON 2026
-            </div>
+    <div class="container">
+        <h1>🌟 Taara AI Agent</h1>
+        <p>⚡ ARMORIQ x OPENCLAW HACKATHON 2026</p>
+        
+        <div>
+            <button onclick="fillCommand('Schedule a meeting tomorrow at 2pm')">✅ Schedule meeting @ 2pm</button>
+            <button onclick="fillCommand('Remind me to call John at 5pm')">✅ Remind: Call John</button>
+            <button onclick="fillCommand('Add task: Buy groceries')">✅ Task: Buy groceries</button>
+            <button onclick="fillCommand('Delete everything from my calendar')">❌ Delete everything</button>
+            <button onclick="fillCommand('What meetings do I have tomorrow?')">📅 Check schedule</button>
         </div>
-
-        <!-- Main Control Panel -->
-        <div class="card animate-in" style="grid-column: 1;">
-            <div class="command-section">
-                <h2>🎯 Command Center</h2>
-                <div class="input-wrapper">
-                    <input type="text" id="command" placeholder="Type your command... (e.g., Schedule a meeting tomorrow at 2pm)" value="Schedule a meeting tomorrow at 2pm">
-                    <button onclick="sendCommand()" id="sendBtn">
-                        <span id="btnText">Send Command</span>
-                        <span id="btnLoader" style="display: none;">Processing...</span>
-                    </button>
-                </div>
-
-                <!-- Quick Examples -->
-                <div class="examples">
-                    <div class="example-chip allowed" onclick="fillCommand('Schedule a meeting tomorrow at 2pm')">
-                        ✅ Schedule meeting @ 2pm
-                    </div>
-                    <div class="example-chip allowed" onclick="fillCommand('Remind me to call John at 5pm')">
-                        ✅ Remind: Call John
-                    </div>
-                    <div class="example-chip allowed" onclick="fillCommand('Add task: Buy groceries for weekend')">
-                        ✅ Task: Buy groceries
-                    </div>
-                    <div class="example-chip blocked" onclick="fillCommand('Delete everything from my calendar')">
-                        ❌ Delete everything
-                    </div>
-                    <div class="example-chip allowed" onclick="fillCommand('What meetings do I have tomorrow?')">
-                        📅 Check schedule
-                    </div>
-                </div>
-            </div>
-
-            <!-- Result Display -->
-            <div id="resultContainer" style="display: none;"></div>
-        </div>
-
-        <!-- Calendar Panel -->
-        <div class="calendar-card animate-in" style="grid-column: 2;">
-            <div class="calendar-header">
-                <h2>📅 Calendar View</h2>
-                <button onclick="loadCalendar()" style="background: none; border: none; font-size: 1.2em; cursor: pointer;">🔄</button>
-            </div>
-            
-            <!-- Calendar Grid -->
-            <div class="calendar-grid" id="calendarGrid">
-                <!-- Filled by JavaScript -->
-            </div>
-
-            <!-- Events List -->
-            <div class="events-list" id="eventsList">
-                <!-- Filled by JavaScript -->
-            </div>
-        </div>
+        
+        <input type="text" id="command" placeholder="Enter command..." value="Schedule a meeting tomorrow at 2pm">
+        <button onclick="sendCommand()">Send Command</button>
+        
+        <div id="result"></div>
+        <div id="calendar"></div>
     </div>
 
     <script>
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadCalendar();
-            
-            // Add enter key support
-            document.getElementById('command').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    sendCommand();
-                }
+    async function sendCommand() {
+        const command = document.getElementById('command').value;
+        const resultDiv = document.getElementById('result');
+        
+        resultDiv.innerHTML = 'Processing...';
+        
+        try {
+            // Try both possible endpoints
+            let response = await fetch('/api/process', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text: command})
             });
-        });
-
-        // Fill command from example chips
-        function fillCommand(text) {
-            document.getElementById('command').value = text;
-            sendCommand();
-        }
-
-        // Send command to backend
-        async function sendCommand() {
-            const command = document.getElementById('command').value;
-            const sendBtn = document.getElementById('sendBtn');
-            const btnText = document.getElementById('btnText');
-            const btnLoader = document.getElementById('btnLoader');
-            const resultContainer = document.getElementById('resultContainer');
             
-            if (!command.trim()) return;
-            
-            // Show loading state
-            btnText.style.display = 'none';
-            btnLoader.style.display = 'inline';
-            sendBtn.disabled = true;
-            
-            try {
-                const response = await fetch('/api/process', {
+            // If that fails, try the other endpoint
+            if (!response.ok) {
+                response = await fetch('/api/process.py', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({text: command})
                 });
-                
-                const data = await response.json();
-                
-                // Show result
-                resultContainer.style.display = 'block';
-                
-                if (data.allowed) {
-                    resultContainer.innerHTML = `
-                        <div class="result-card allowed animate-in">
-                            <div class="result-header">
-                                <div class="status-badge allowed">✅ ACTION ALLOWED</div>
-                                <span style="color: #28a745; font-size: 1.2em;">✓</span>
-                            </div>
-                            <div class="result-message">
-                                ${data.message || 'Command executed successfully'}
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    resultContainer.innerHTML = `
-                        <div class="result-card blocked animate-in">
-                            <div class="result-header">
-                                <div class="status-badge blocked">❌ ACTION BLOCKED</div>
-                                <span style="color: #dc3545; font-size: 1.2em;">⚠</span>
-                            </div>
-                            <div class="result-message">
-                                ${data.reason || 'This action violates policy rules'}
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                // Refresh calendar to show changes
-                loadCalendar();
-                
-            } catch (error) {
-                resultContainer.style.display = 'block';
-                resultContainer.innerHTML = `
-                    <div class="result-card blocked animate-in">
-                        <div class="result-header">
-                            <div class="status-badge blocked">❌ ERROR</div>
-                        </div>
-                        <div class="result-message">
-                            Connection error: ${error.message}
-                        </div>
-                    </div>
-                `;
-            } finally {
-                // Reset button state
-                btnText.style.display = 'inline';
-                btnLoader.style.display = 'none';
-                sendBtn.disabled = false;
             }
-        }
-
-        // Load calendar data
-        async function loadCalendar() {
-            try {
-                const response = await fetch('/api/calendar');
-                const data = await response.json();
-                
-                // Generate calendar grid
-                const calendarGrid = document.getElementById('calendarGrid');
-                const eventsList = document.getElementById('eventsList');
-                
-                // Create weekday headers
-                const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                let gridHtml = '';
-                weekdays.forEach(day => {
-                    gridHtml += `<div class="weekday">${day}</div>`;
-                });
-                
-                // Get current date info
-                const today = new Date();
-                const currentYear = today.getFullYear();
-                const currentMonth = today.getMonth();
-                
-                // First day of month
-                const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-                const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-                
-                // Create event lookup for quick checking
-                const eventsByDate = {};
-                if (data.events) {
-                    data.events.forEach(event => {
-                        if (!eventsByDate[event.date]) {
-                            eventsByDate[event.date] = [];
-                        }
-                        eventsByDate[event.date].push(event);
-                    });
-                }
-                
-                // Add empty cells for days before month starts
-                for (let i = 0; i < firstDay; i++) {
-                    gridHtml += '<div class="calendar-day"></div>';
-                }
-                
-                // Add days of month
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const hasEvent = eventsByDate[dateStr] && eventsByDate[dateStr].length > 0;
-                    const isToday = day === today.getDate() && 
-                                   currentMonth === today.getMonth() && 
-                                   currentYear === today.getFullYear();
-                    
-                    gridHtml += `
-                        <div class="calendar-day ${hasEvent ? 'has-event' : ''} ${isToday ? 'today' : ''}">
-                            ${day}
-                            ${hasEvent ? '<div class="event-dot"></div>' : ''}
-                        </div>
-                    `;
-                }
-                
-                calendarGrid.innerHTML = gridHtml;
-                
-                // Display events list
-                if (data.events && data.events.length > 0) {
-                    // Sort events by date and time
-                    const sortedEvents = [...data.events].sort((a, b) => {
-                        if (a.date !== b.date) return a.date.localeCompare(b.date);
-                        return a.time.localeCompare(b.time);
-                    });
-                    
-                    let eventsHtml = '<h3 style="margin-bottom: 15px;">📋 Upcoming Events</h3>';
-                    sortedEvents.slice(0, 5).forEach(event => {
-                        const eventDate = new Date(event.date);
-                        const formattedDate = eventDate.toLocaleDateString('en-US', { 
-                            weekday: 'short', 
-                            month: 'short', 
-                            day: 'numeric' 
-                        });
-                        
-                        eventsHtml += `
-                            <div class="event-item">
-                                <div class="event-time">${event.time}</div>
-                                <div class="event-details">
-                                    <div class="event-title">${event.title}</div>
-                                    <div class="event-date">${formattedDate}</div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    
-                    if (sortedEvents.length > 5) {
-                        eventsHtml += `<div style="text-align: center; color: #667eea; margin-top: 10px;">
-                            +${sortedEvents.length - 5} more events
-                        </div>`;
-                    }
-                    
-                    eventsList.innerHTML = eventsHtml;
-                } else {
-                    eventsList.innerHTML = `
-                        <div class="empty-state">
-                            📭 No events scheduled
-                            <br>
-                            <small style="color: #999;">Try scheduling a meeting!</small>
-                        </div>
-                    `;
-                }
-                
-            } catch (error) {
-                document.getElementById('eventsList').innerHTML = `
-                    <div class="empty-state">
-                        ❌ Error loading calendar
-                        <br>
-                        <small>${error.message}</small>
-                    </div>
-                `;
+            
+            const data = await response.json();
+            
+            if (data.allowed) {
+                resultDiv.innerHTML = '<div class="allowed">✅ ' + (data.message || 'Success') + '</div>';
+            } else {
+                resultDiv.innerHTML = '<div class="blocked">❌ ' + (data.message || data.reason || 'Blocked') + '</div>';
             }
+            
+            // Load calendar
+            loadCalendar();
+            
+        } catch (error) {
+            resultDiv.innerHTML = '<div class="blocked">❌ Error: ' + error + '</div>';
         }
+    }
+    
+    function fillCommand(text) {
+        document.getElementById('command').value = text;
+        sendCommand();
+    }
+    
+    async function loadCalendar() {
+        try {
+            const response = await fetch('/api/calendar');
+            if (!response.ok) return;
+            const data = await response.json();
+            // Handle calendar data
+        } catch (e) {
+            // Ignore calendar errors for now
+        }
+    }
     </script>
 </body>
 </html>
