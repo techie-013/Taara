@@ -21,5 +21,5 @@
 - HTML/CSS/JavaScript
 
 ## Team
-[Your Team Name]
+[The Garuds]
 "@ | Out-File -FilePath README.md -Encoding UTF8
